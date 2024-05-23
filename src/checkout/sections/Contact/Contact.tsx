@@ -4,7 +4,6 @@ import { ResetPassword } from "../ResetPassword/ResetPassword";
 import { useCustomerAttach } from "@/checkout/hooks/useCustomerAttach";
 import { getQueryParams } from "@/checkout/lib/utils/url";
 import { SignIn } from "@/checkout/sections/SignIn/SignIn";
-import { GuestUser } from "@/checkout/sections/GuestUser/GuestUser";
 import { useUser } from "@/checkout/hooks/useUser";
 
 type Section = "signedInUser" | "guestUser" | "signIn" | "resetPassword";
@@ -66,9 +65,9 @@ export const Contact: FC<ContactProps> = ({ setShowOnlyContact }) => {
 
 	return (
 		<div>
-			{isCurrentSection("guestUser") && (
+			{/* {isCurrentSection("guestUser") && (
 				<GuestUser onSectionChange={handleChangeSection("signIn")} onEmailChange={setEmail} email={email} />
-			)}
+			)} */}
 
 			{isCurrentSection("signIn") && (
 				<SignIn
