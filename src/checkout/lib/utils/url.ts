@@ -21,6 +21,7 @@ const queryParamsMap = {
 	// stripe
 	payment_intent: "paymentIntent",
 	payment_intent_client_secret: "paymentIntentClientSecret",
+	register: "register",
 } as const;
 
 type UnmappedQueryParam = keyof typeof queryParamsMap;
@@ -39,10 +40,20 @@ export type QueryParams = Record<QueryParam, ParamBasicValue> & CustomTypedQuery
 
 // this is intentional, we know what we'll get from the query but
 // queryString has no way to type this in such a specific way
-export const getRawQueryParams = () => queryString.parse(location.search) as unknown as RawQueryParams;
+export const getRawQueryParams = () => {
+	if (typeof window == "undefined" || !window?.location) {
+		return {};
+	}
+
+	queryString.parse(window?.location?.search) as unknown as RawQueryParams;
+};
 
 export const getQueryParams = (): QueryParams => {
 	const params = getRawQueryParams();
+
+	if (!params) {
+		return {} as QueryParams;
+	}
 
 	return Object.entries(params).reduce((result, entry) => {
 		const [paramName, paramValue] = entry as [UnmappedQueryParam, ParamBasicValue];
@@ -111,8 +122,22 @@ export const extractCheckoutIdFromUrl = (): string => {
 	const { checkoutId } = getQueryParams();
 
 	if (isOrderConfirmationPage()) {
+		console.log("INSIDE ORDER CONFIRM PAGE");
+
 		return "";
 	}
+
+	if (isRegisterPage()) {
+		console.log("INSIDE REGISTER PAGE");
+
+		return "";
+	}
+
+	if (!checkoutId) {
+		return "";
+	}
+
+	console.log("OUTSIDE: " + checkoutId);
 
 	if (typeof checkoutId !== "string") {
 		throw new Error("Checkout token does not exist");
@@ -124,4 +149,9 @@ export const extractCheckoutIdFromUrl = (): string => {
 export const isOrderConfirmationPage = () => {
 	const { orderId } = getQueryParams();
 	return typeof orderId === "string";
+};
+
+export const isRegisterPage = () => {
+	const { register } = getQueryParams();
+	return typeof register === "string";
 };

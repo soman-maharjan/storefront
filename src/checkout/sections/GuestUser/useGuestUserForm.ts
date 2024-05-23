@@ -22,6 +22,11 @@ export interface GuestUserFormData {
 	createAccount: boolean;
 }
 
+export interface RegisterUserFormData {
+	email: string;
+	password: string;
+}
+
 interface GuestUserFormProps {
 	// shared between sign in form and guest user form
 	initialEmail: string;
@@ -134,4 +139,80 @@ export const useGuestUserForm = ({ initialEmail }: GuestUserFormProps) => {
 	};
 
 	return { ...form, handleChange: onChange };
+};
+
+export const useRegisterUserForm = () => {
+	const { errorMessages } = useErrorMessages();
+	const [, userRegister] = useUserRegisterMutation();
+	const [userRegisterDisabled, setUserRegistrationDisabled] = useState(false);
+
+	const validationSchema = object({
+		email: string().email(errorMessages.invalid).required(errorMessages.required),
+		password: string().min(8, "Password must be at least 8 characters").required(),
+	}) as Schema<RegisterUserFormData>;
+
+	const defaultFormData: RegisterUserFormData = {
+		email: "",
+		password: "",
+	};
+
+	const onSubmit = useFormSubmit<RegisterUserFormData, typeof userRegister>(
+		useMemo(
+			() => ({
+				scope: "userRegister",
+				onSubmit: userRegister,
+				shouldAbort: ({ formData, formHelpers: { validateForm } }) => {
+					const errors = validateForm(formData);
+					return hasErrors(errors);
+				},
+				parse: ({ email, password }) => ({
+					input: {
+						email,
+						password,
+					},
+				}),
+				onError: ({ errors }) => {
+					const hasAccountForCurrentEmail = errors.some(({ code }) => code === "UNIQUE");
+
+					if (hasAccountForCurrentEmail) {
+						setUserRegistrationDisabled(true);
+						// @todo this logic will be removed once new register flow is implemented
+					}
+				},
+				onSuccess: () => {
+					console.log("USER REGISTERED !!");
+					setUserRegistrationDisabled(true);
+				},
+			}),
+			[userRegister],
+		),
+	);
+
+	const form = useForm<RegisterUserFormData>({
+		initialValues: defaultFormData,
+		onSubmit,
+		validationSchema,
+		validateOnChange: true,
+		validateOnBlur: false,
+		initialTouched: { email: true },
+	});
+
+	const {
+		values: { email, password },
+		handleSubmit,
+	} = form;
+
+	useEffect(() => {
+		setUserRegistrationDisabled(false);
+	}, [email]);
+
+	useEffect(() => {
+		if (userRegisterDisabled || !email || !password) {
+			return;
+		}
+
+		void handleSubmit();
+	}, [handleSubmit, userRegisterDisabled]);
+
+	return { ...form };
 };
